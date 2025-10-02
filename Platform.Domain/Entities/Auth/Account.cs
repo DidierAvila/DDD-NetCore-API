@@ -1,7 +1,13 @@
+using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
+
 namespace Platform.Domain.Entities.Auth;
 
+[Table("Accounts", Schema = "Auth")]
 public partial class Account
 {
+    [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public Guid Id { get; set; }
 
     public Guid? UserId { get; set; }

@@ -6,12 +6,7 @@ namespace Platform.Domain.Entities.Auth
     [Table("RolePermissions", Schema = "Auth")]
     public class RolePermission
     {
-        [Key]
-        [Column(Order = 0)]
         public Guid RoleId { get; set; }
-
-        [Key]
-        [Column(Order = 1)]
         public Guid PermissionId { get; set; }
 
         // Navigation properties

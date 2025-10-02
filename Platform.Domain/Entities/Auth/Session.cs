@@ -1,10 +1,16 @@
+using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
+
 namespace Platform.Domain.Entities.Auth;
 
+[Table(name: "Sessions", Schema = "Auth")]
 public partial class Session
 {
+    [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public Guid Id { get; set; }
 
-    public string SessionToken { get; set; } = null!;
+    public required string SessionToken { get; set; }
 
     public Guid? UserId { get; set; }
 

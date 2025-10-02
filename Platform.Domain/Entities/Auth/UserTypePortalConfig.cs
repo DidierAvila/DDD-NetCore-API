@@ -7,6 +7,7 @@ namespace Platform.Domain.Entities.Auth
     public class UserTypePortalConfig
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public Guid Id { get; set; }
 
         [Required]
