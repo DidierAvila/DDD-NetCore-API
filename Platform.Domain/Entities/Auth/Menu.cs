@@ -7,8 +7,8 @@ namespace Platform.Domain.Entities.Auth
     public class Menu
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public Guid Id { get; set; }
-
         public required string Label { get; set; }
         public required string Icon { get; set; }
         public required string Route { get; set; }
