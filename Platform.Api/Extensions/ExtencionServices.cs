@@ -1,3 +1,7 @@
+using Platform.Application.Core.App.Commands.Handlers;
+using Platform.Application.Core.App.Commands.Services;
+using Platform.Application.Core.App.Queries.Handlers;
+using Platform.Application.Core.App.Queries.Services;
 using Platform.Application.Core.Auth.Commands.Authentication;
 using Platform.Application.Core.Auth.Commands.Handlers;
 using Platform.Application.Core.Auth.Commands.Menus;
@@ -16,10 +20,13 @@ using Platform.Application.Core.Auth.Queries.Users;
 using Platform.Application.Core.Auth.Queries.UserTypes;
 using Platform.Application.Mappings.Auth;
 using Platform.Application.Services;
+using Platform.Domain.Entities.App;
 using Platform.Domain.Entities.Auth;
 using Platform.Domain.Repositories;
+using Platform.Domain.Repositories.App;
 using Platform.Domain.Repositories.Auth;
 using Platform.Infrastructure.Repositories;
+using Platform.Infrastructure.Repositories.App;
 using Platform.Infrastructure.Repositories.Auth;
 
 namespace Platform.Api.Extensions
@@ -143,6 +150,23 @@ namespace Platform.Api.Extensions
             services.AddScoped<IMenuRepository, MenuRepository>();
             services.AddScoped<IMenuPermissionRepository, MenuPermissionRepository>();
             services.AddScoped<IUserTypePortalConfigRepository, UserTypePortalConfigRepository>();
+            
+            // CQRS Commands - Service Entity Operations
+            services.AddScoped<CreateService>();
+            services.AddScoped<UpdateService>();
+            services.AddScoped<DeleteService>();
+            services.AddScoped<IServiceCommandHandler, ServiceCommandHandler>();
+
+            // CQRS Queries - Service Entity Retrieval
+            services.AddScoped<GetAllServices>();
+            services.AddScoped<GetServiceById>();
+            services.AddScoped<GetActiveServices>();
+            services.AddScoped<GetServicesFiltered>();
+            services.AddScoped<IServiceQueryHandler, ServiceQueryHandler>();
+
+            // Repository Pattern - Service Entity Data Access
+            services.AddScoped<IServiceRepository, ServiceRepository>();
+            services.AddScoped<IRepositoryBase<Service>, RepositoryBase<Service>>();
 
             // Services
             services.AddScoped<SessionInvalidationService>();

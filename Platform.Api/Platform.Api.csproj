@@ -25,6 +25,7 @@
 
   <ItemGroup>
     <Folder Include="Controllers\Auth\" />
+    <Folder Include="Controllers\App\" />
   </ItemGroup>
 
 </Project>

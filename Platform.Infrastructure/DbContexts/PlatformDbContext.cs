@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Platform.Domain.Entities.Auth;
+using Platform.Domain.Entities.App;
 
 namespace Platform.Infrastructure.DbContexts
 {
@@ -16,6 +17,7 @@ namespace Platform.Infrastructure.DbContexts
         public virtual DbSet<Permission> Permissions { get; set; }
         public virtual DbSet<Role> Roles { get; set; }
         public virtual DbSet<RolePermission> RolePermissions { get; set; }
+        public virtual DbSet<Service> Services { get; set; }
         public virtual DbSet<Session> Sessions { get; set; }
         public virtual DbSet<User> Users { get; set; }
         public virtual DbSet<UserRole> UserRoles { get; set; }
