@@ -1,5 +1,3 @@
-using Platform.Domain.DTOs.Auth;
-
 namespace Platform.Domain.DTOs.App
 {
     public class ServiceDto
@@ -7,31 +5,33 @@ namespace Platform.Domain.DTOs.App
         public Guid Id { get; set; }
         public string Name { get; set; } = null!;
         public string? Description { get; set; }
-        public string Endpoint { get; set; } = null!;
-        public string Method { get; set; } = null!;
         public bool Status { get; set; }
+        public decimal HourlyValue { get; set; }
+        public Guid SupplierId { get; set; }
+        public string? SupplierName { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+        public List<ServiceCountryDto>? Countries { get; set; }
     }
 
     public class CreateServiceDto
     {
         public string Name { get; set; } = null!;
         public string? Description { get; set; }
-        public string Endpoint { get; set; } = null!;
-        public string Method { get; set; } = null!;
         public bool Status { get; set; } = true;
-        public List<Guid>? PermissionIds { get; set; }
+        public decimal HourlyValue { get; set; }
+        public Guid SupplierId { get; set; }
+        public List<string>? CountryCodes { get; set; }
     }
 
     public class UpdateServiceDto
     {
         public string Name { get; set; } = null!;
         public string? Description { get; set; }
-        public string Endpoint { get; set; } = null!;
-        public string Method { get; set; } = null!;
         public bool Status { get; set; }
-        public List<Guid>? PermissionIds { get; set; }
+        public decimal HourlyValue { get; set; }
+        public Guid SupplierId { get; set; }
+        public List<string>? CountryCodes { get; set; }
     }
 
     public class ServiceSummaryDto
@@ -39,12 +39,12 @@ namespace Platform.Domain.DTOs.App
         public Guid Id { get; set; }
         public string Name { get; set; } = null!;
         public string? Description { get; set; }
-        public string Endpoint { get; set; } = null!;
-        public string Method { get; set; } = null!;
         public bool Status { get; set; }
+        public decimal HourlyValue { get; set; }
+        public Guid SupplierId { get; set; }
+        public string? SupplierName { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
-        public int PermissionCount { get; set; }
     }
 
     public class ServiceWithDetailsDto
@@ -52,17 +52,14 @@ namespace Platform.Domain.DTOs.App
         public Guid Id { get; set; }
         public string Name { get; set; } = null!;
         public string? Description { get; set; }
-        public string Endpoint { get; set; } = null!;
-        public string Method { get; set; } = null!;
         public bool Status { get; set; }
+        public decimal HourlyValue { get; set; }
+        public Guid SupplierId { get; set; }
+        public string? SupplierName { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
-        public ICollection<PermissionDto> Permissions { get; set; } = new List<PermissionDto>();
     }
 
-    /// <summary>
-    /// DTO optimizado para dropdowns/listas desplegables de servicios (máximo rendimiento)
-    /// </summary>
     public class ServiceDropdownDto
     {
         public Guid Id { get; set; }

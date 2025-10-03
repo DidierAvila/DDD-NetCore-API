@@ -28,16 +28,6 @@ namespace Platform.Application.Core.App.Queries.Services
                 query = query.Where(s => s.Name.Contains(filter.Name, StringComparison.OrdinalIgnoreCase));
             }
 
-            if (!string.IsNullOrEmpty(filter.Endpoint))
-            {
-                query = query.Where(s => s.Endpoint.Contains(filter.Endpoint, StringComparison.OrdinalIgnoreCase));
-            }
-
-            if (!string.IsNullOrEmpty(filter.Method))
-            {
-                query = query.Where(s => s.Method.Equals(filter.Method, StringComparison.OrdinalIgnoreCase));
-            }
-
             if (filter.Status.HasValue)
             {
                 query = query.Where(s => s.Status == filter.Status.Value);

@@ -28,6 +28,7 @@ using Platform.Domain.Repositories.Auth;
 using Platform.Infrastructure.Repositories;
 using Platform.Infrastructure.Repositories.App;
 using Platform.Infrastructure.Repositories.Auth;
+using Platform.Infrastructure.Services;
 
 namespace Platform.Api.Extensions
 {
@@ -65,6 +66,8 @@ namespace Platform.Api.Extensions
             services.AddScoped<GetAllUsers>();
             services.AddScoped<GetAllUsersBasic>();
             services.AddScoped<GetAllUsersFiltered>();
+            services.AddScoped<GetUsersByTypeForDropdown>();
+            services.AddScoped<GetSupplierUsersForDropdown>();
             services.AddScoped<IUserQueryHandler, UserQueryHandler>();
 
             // UserType Commands
@@ -150,6 +153,16 @@ namespace Platform.Api.Extensions
             services.AddScoped<IMenuRepository, MenuRepository>();
             services.AddScoped<IMenuPermissionRepository, MenuPermissionRepository>();
             services.AddScoped<IUserTypePortalConfigRepository, UserTypePortalConfigRepository>();
+            
+            // Repositorios para países y relaciones con servicios
+            services.AddScoped<IRepositoryBase<Country>, RepositoryBase<Country>>();
+            services.AddScoped<ICountryRepository, CountryRepository>();
+            services.AddScoped<IRepositoryBase<ServiceCountry>, RepositoryBase<ServiceCountry>>();
+            services.AddScoped<IServiceCountryRepository, ServiceCountryRepository>();
+            
+            // Servicio de sincronización de países
+            services.AddHttpClient();
+            services.AddScoped<CountrySyncService>();
             
             // CQRS Commands - Service Entity Operations
             services.AddScoped<CreateService>();

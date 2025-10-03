@@ -9,23 +9,15 @@ namespace Platform.Application.Core.App.Queries.Handlers
         private readonly GetAllServices _getAllServices;
         private readonly GetServiceById _getServiceById;
         private readonly GetActiveServices _getActiveServices;
-        private readonly GetServicesFiltered _getServicesFiltered;
 
         public ServiceQueryHandler(
             GetAllServices getAllServices,
             GetServiceById getServiceById,
-            GetActiveServices getActiveServices,
-            GetServicesFiltered getServicesFiltered)
+            GetActiveServices getActiveServices)
         {
             _getAllServices = getAllServices;
             _getServiceById = getServiceById;
             _getActiveServices = getActiveServices;
-            _getServicesFiltered = getServicesFiltered;
-        }
-
-        public async Task<List<ServiceDto>> GetAllServicesAsync(CancellationToken cancellationToken = default)
-        {
-            return await _getAllServices.HandleAsync(cancellationToken);
         }
 
         public async Task<ServiceDto?> GetServiceByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -38,9 +30,9 @@ namespace Platform.Application.Core.App.Queries.Handlers
             return await _getActiveServices.HandleAsync(cancellationToken);
         }
 
-        public async Task<PaginationResponseDto<ServiceSummaryDto>> GetServicesFilteredAsync(ServiceFilterDto filter, CancellationToken cancellationToken = default)
+        public async Task<PaginationResponseDto<ServiceSummaryDto>> GetAllServicesWithPaginationAsync(ServiceFilterDto filter, CancellationToken cancellationToken = default)
         {
-            return await _getServicesFiltered.HandleAsync(filter, cancellationToken);
+            return await _getAllServices.HandleWithPaginationAsync(filter, cancellationToken);
         }
     }
 }

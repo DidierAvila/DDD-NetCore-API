@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Platform.Domain.Entities.Auth;
 using Platform.Domain.Entities.App;
 
@@ -23,6 +23,8 @@ namespace Platform.Infrastructure.DbContexts
         public virtual DbSet<UserRole> UserRoles { get; set; }
         public virtual DbSet<UserType> UserTypes { get; set; }
         public virtual DbSet<UserTypePortalConfig> UserTypePortalConfigs { get; set; }
+        public virtual DbSet<Country> Countries { get; set; }
+        public virtual DbSet<ServiceCountry> ServiceCountries { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -98,6 +100,19 @@ namespace Platform.Infrastructure.DbContexts
                 .HasOne(s => s.User)
                 .WithMany(u => u.Sessions)
                 .HasForeignKey(s => s.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+                
+            // Configurar relación ServiceCountry
+            modelBuilder.Entity<ServiceCountry>()
+                .HasOne(sc => sc.Service)
+                .WithMany(s => s.ServiceCountries)
+                .HasForeignKey(sc => sc.ServiceId)
+                .OnDelete(DeleteBehavior.Cascade);
+                
+            modelBuilder.Entity<ServiceCountry>()
+                .HasOne(sc => sc.Country)
+                .WithMany(c => c.ServiceCountries)
+                .HasForeignKey(sc => sc.CountryCode)
                 .OnDelete(DeleteBehavior.Cascade);
         }
     }
