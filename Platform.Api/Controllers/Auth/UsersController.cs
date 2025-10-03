@@ -6,6 +6,9 @@ using Platform.Domain.DTOs.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Platform.Api.Attributes;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Platform.Api.Controllers.Auth
 {
@@ -66,6 +69,33 @@ namespace Platform.Api.Controllers.Auth
                 _logger.LogError(ex, "Error retrieving all users with filters");
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
+        }
+        
+        /// <summary>
+        /// Obtiene una lista de usuarios para dropdown filtrados por tipo de usuario
+        /// </summary>
+        /// <param name="userTypeId">ID del tipo de usuario</param>
+        /// <param name="cancellationToken">Token de cancelación</param>
+        /// <returns>Lista de usuarios activos del tipo especificado</returns>
+        [HttpGet("dropdown/bytype/{userTypeId}")]
+        [RequirePermission("users.read")]
+        public async Task<ActionResult<IEnumerable<UserDropdownDto>>> GetUsersByTypeForDropdown([FromRoute] Guid userTypeId, CancellationToken cancellationToken)
+        {
+            var users = await _userQueryHandler.GetUsersByTypeForDropdown(userTypeId, cancellationToken);
+            return Ok(users);
+        }
+        
+        /// <summary>
+        /// Obtiene una lista de usuarios tipo Supplier para dropdown
+        /// </summary>
+        /// <param name="cancellationToken">Token de cancelación</param>
+        /// <returns>Lista de usuarios Supplier activos</returns>
+        [HttpGet("dropdown/suppliers")]
+        [RequirePermission("users.read")]
+        public async Task<ActionResult<IEnumerable<UserDropdownDto>>> GetSupplierUsersForDropdown(CancellationToken cancellationToken)
+        {
+            var suppliers = await _userQueryHandler.GetSupplierUsersForDropdown(cancellationToken);
+            return Ok(suppliers);
         }
 
         /// <summary>

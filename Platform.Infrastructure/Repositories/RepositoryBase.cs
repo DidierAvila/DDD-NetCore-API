@@ -9,7 +9,7 @@ namespace Platform.Infrastructure.Repositories
     public class RepositoryBase<TEntity> : IRepositoryBase<TEntity> where TEntity : class
     {
         internal readonly PlatformDbContext _context;
-        private readonly ILogger<RepositoryBase<TEntity>> _logger;
+        protected readonly ILogger<RepositoryBase<TEntity>> _logger;
         
         public RepositoryBase(PlatformDbContext context, ILogger<RepositoryBase<TEntity>> logger)
         {
