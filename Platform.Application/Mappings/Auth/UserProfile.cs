@@ -18,12 +18,20 @@ namespace Platform.Application.Mappings.Auth
                     {
                         try
                         {
-                            dest.AdditionalData = JsonSerializer.Deserialize<Dictionary<string, object>>(src.ExtraData);
+                            var options = new JsonSerializerOptions
+                            {
+                                PropertyNameCaseInsensitive = true
+                            };
+                            dest.AdditionalData = JsonSerializer.Deserialize<Dictionary<string, object>>(src.ExtraData, options);
                         }
                         catch
                         {
                             dest.AdditionalData = new Dictionary<string, object>();
                         }
+                    }
+                    else
+                    {
+                        dest.AdditionalData = new Dictionary<string, object>();
                     }
                 });
 
@@ -36,12 +44,20 @@ namespace Platform.Application.Mappings.Auth
                     {
                         try
                         {
-                            dest.AdditionalData = JsonSerializer.Deserialize<Dictionary<string, object>>(src.ExtraData);
+                            var options = new JsonSerializerOptions
+                            {
+                                PropertyNameCaseInsensitive = true
+                            };
+                            dest.AdditionalData = JsonSerializer.Deserialize<Dictionary<string, object>>(src.ExtraData, options);
                         }
                         catch
                         {
                             dest.AdditionalData = new Dictionary<string, object>();
                         }
+                    }
+                    else
+                    {
+                        dest.AdditionalData = new Dictionary<string, object>();
                     }
                 });
 
