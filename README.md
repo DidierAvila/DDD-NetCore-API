@@ -72,6 +72,12 @@ Platform.Api → Platform.Application → Platform.Domain
 - [.NET 9.0 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
 - [SQL Server](https://www.microsoft.com/sql-server) (LocalDB o instancia completa)
 - [Visual Studio 2022](https://visualstudio.microsoft.com/) o [VS Code](https://code.visualstudio.com/)
+- [Entity Framework Core Tools](https://docs.microsoft.com/es-es/ef/core/cli/dotnet) (`dotnet tool install --global dotnet-ef`)
+
+### Recursos adicionales
+
+- **Diagrama de la base de datos**: El archivo `Diagrama_platform.png` en la raíz del proyecto muestra la estructura de la base de datos y las relaciones entre entidades.
+- **Script SQL**: El archivo `script_platform.sql` contiene el script completo para crear la base de datos y todas sus tablas manualmente si se prefiere este método en lugar de las migraciones.
 
 ### 1. Clonar el repositorio
 
@@ -82,7 +88,7 @@ cd DDD-NetCore-API
 
 ### 2. Configurar la base de datos
 
-Actualizar la cadena de conexión en `Platform.Api/appsettings.json`:
+Actualizar la cadena de conexión en `Platform.Api/appsettings.Development.json`:
 
 ```json
 {
@@ -104,10 +110,25 @@ dotnet restore
 dotnet build
 ```
 
-### 5. Ejecutar migraciones (cuando estén disponibles)
+### 5. Migraciones de base de datos
+
+El proyecto incluye migraciones de Entity Framework Core para la creación y actualización de la base de datos:
+
+- **InitialCreate**: Crea la estructura inicial de la base de datos con todas las tablas necesarias
+- **SeedInitialData**: Agrega datos iniciales para las tablas principales (UserTypes, Roles, Permissions, Countries)
+
+Las migraciones se aplican automáticamente al iniciar la aplicación en entorno de desarrollo gracias a la extensión `MigrateDatabase()` configurada en `Program.cs`.
+
+Para aplicar las migraciones manualmente:
 
 ```bash
 dotnet ef database update --project Platform.Infrastructure --startup-project Platform.Api
+```
+
+Para crear nuevas migraciones cuando se modifiquen las entidades:
+
+```bash
+dotnet ef migrations add NombreMigracion --project Platform.Infrastructure --startup-project Platform.Api
 ```
 
 ### 6. Ejecutar la aplicación
@@ -210,6 +231,8 @@ docker run -p 8080:80 platform-api
 - **Repository Pattern**: Abstracción del acceso a datos
 - **Dependency Injection**: Inversión de control integrada
 - **DTO Pattern**: Objetos de transferencia optimizados
+- **Database Migrations**: Gestión de cambios en la estructura de la base de datos
+- **Seed Data**: Inicialización de datos para entornos de desarrollo
 
 ## 📝 Estructura del Dominio Auth
 
