@@ -44,6 +44,8 @@ namespace Platform.Api.Extensions
         /// <returns>La colecci�n de servicios configurada.</returns>
         public static IServiceCollection AddApiExtention(this IServiceCollection services)
         {
+            // Validators
+            services.AddValidators();
 
             // AutoMapper
             services.AddAutoMapper(typeof(UserProfile), typeof(UserTypeProfile), typeof(PermissionProfile), typeof(AuthProfile), typeof(RoleProfile), typeof(RolePermissionProfile), typeof(MenuProfile), typeof(MenuPermissionProfile));
@@ -185,6 +187,9 @@ namespace Platform.Api.Extensions
             
             // Registrar PermissionAuthorizationService
             services.AddScoped<PermissionAuthorizationService>();
+            
+            // Reports
+            services.AddScoped<Platform.Application.Core.App.Queries.Reports.IReportQueryHandler, Platform.Application.Core.App.Queries.Reports.ReportQueryHandler>();
 
             return services;
         }

@@ -9,6 +9,8 @@
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="12.0.1" />
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+    <PackageReference Include="EPPlus" Version="8.2.0" />
+    <PackageReference Include="FluentValidation" Version="12.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.9" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.9" />
   </ItemGroup>
@@ -19,7 +21,9 @@
 
   <ItemGroup>
     <Folder Include="Core\App\Commands\Handlers\" />
+    <Folder Include="Core\App\Validators\" />
     <Folder Include="Core\App\Queries\Handlers\" />
+    <Folder Include="Core\Auth\Validators\" />
   </ItemGroup>
 
 </Project>
