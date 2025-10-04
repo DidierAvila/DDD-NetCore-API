@@ -124,12 +124,6 @@ builder.Services.AddAuthentication(config =>
 
 var app = builder.Build();
 
-// Aplicar migraciones automáticamente al iniciar la aplicación
-if (app.Environment.IsDevelopment())
-{
-    app.MigrateDatabase();
-}
-
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
