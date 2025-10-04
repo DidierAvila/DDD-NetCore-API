@@ -16,7 +16,11 @@ namespace Platform.Infrastructure.Repositories
             _context = context;
             _logger = logger;
 
-            _context.Database.SetCommandTimeout(180); // Establece el timeout a 180 segundos (3 minutos)
+            // Solo establecer el timeout si no estamos en un contexto de prueba (InMemory)
+            if (_context.Database.ProviderName?.Contains("InMemory") == false)
+            {
+                _context.Database.SetCommandTimeout(180); // Establece el timeout a 180 segundos (3 minutos)
+            }
         }
 
         internal DbSet<TEntity> EntitySet => _context.Set<TEntity>();

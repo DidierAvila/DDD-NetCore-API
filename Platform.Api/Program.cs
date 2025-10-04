@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Platform.Api.Extensions;
 using Platform.Infrastructure.DbContexts;
+using Platform.Infrastructure.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,7 +27,7 @@ builder.Services.AddCors(options =>
               .AllowCredentials();
     });
 
-    // PolÌtica m·s permisiva para desarrollo
+    // PolÔøΩtica mÔøΩs permisiva para desarrollo
     options.AddPolicy("DevelopmentCors", policy =>
     {
         policy.AllowAnyOrigin()
@@ -41,7 +42,7 @@ builder.Services.AddSwaggerGen(c =>
     {
         Title = "Platform API",
         Version = "v1",
-        Description = "API RESTful principal de la soluciÛn, diseÒada con un enfoque en la escalabilidad, mantenibilidad y la separaciÛn de preocupaciones siguiendo los principios de Domain-Driven Design (DDD) y la Arquitectura Limpia (Clean Architecture).",
+        Description = "API RESTful principal de la soluciÔøΩn, diseÔøΩada con un enfoque en la escalabilidad, mantenibilidad y la separaciÔøΩn de preocupaciones siguiendo los principios de Domain-Driven Design (DDD) y la Arquitectura Limpia (Clean Architecture).",
         Contact = new OpenApiContact
         {
             Name = "Equipo de Desarrollo Platform",
@@ -57,7 +58,7 @@ builder.Services.AddSwaggerGen(c =>
         c.IncludeXmlComments(xmlPath);
     }
 
-    // ConfiguraciÛn de autenticaciÛn JWT
+    // ConfiguraciÔøΩn de autenticaciÔøΩn JWT
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         In = ParameterLocation.Header,
@@ -122,6 +123,12 @@ builder.Services.AddAuthentication(config =>
 });
 
 var app = builder.Build();
+
+// Aplicar migraciones autom√°ticamente al iniciar la aplicaci√≥n
+if (app.Environment.IsDevelopment())
+{
+    app.MigrateDatabase();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

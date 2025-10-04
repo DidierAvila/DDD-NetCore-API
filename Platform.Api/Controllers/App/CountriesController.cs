@@ -4,10 +4,6 @@ using Platform.Api.Attributes;
 using Platform.Domain.DTOs.App;
 using Platform.Domain.Repositories.App;
 using Platform.Infrastructure.Services;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Platform.Api.Controllers.App
 {
