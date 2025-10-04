@@ -19,7 +19,7 @@ namespace Platform.Domain.DTOs.Auth
         public List<UserRoleDto> Roles { get; set; } = new();
 
         // Configuración personalizada del portal por tipo de usuario
-        public UserTypePortalConfigDto? PortalConfiguration { get; set; }
+        public UserTypeDto? PortalConfiguration { get; set; }
     }
 
     public class UserBasicInfoDto

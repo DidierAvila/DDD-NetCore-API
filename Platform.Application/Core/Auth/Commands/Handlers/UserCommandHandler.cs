@@ -75,7 +75,7 @@ namespace Platform.Application.Core.Auth.Commands.Handlers
         }
 
         /// <summary>
-        /// Asignar múltiples roles a un usuario
+        /// Asignar mï¿½ltiples roles a un usuario
         /// </summary>
         public async Task<MultipleRoleAssignmentResult> AssignMultipleRolesToUser(AssignMultipleRolesToUser command, CancellationToken cancellationToken)
         {
@@ -85,7 +85,7 @@ namespace Platform.Application.Core.Auth.Commands.Handlers
             {
                 try
                 {
-                    // Verificar si el rol existe y está activo
+                    // Verificar si el rol existe y estï¿½ activo
                     var role = await _roleRepository.Find(r => r.Id == roleId, cancellationToken);
                     if (role == null || !role.Status)
                     {
@@ -93,7 +93,7 @@ namespace Platform.Application.Core.Auth.Commands.Handlers
                         continue;
                     }
 
-                    // Verificar si ya está asignado
+                    // Verificar si ya estï¿½ asignado
                     var isAlreadyAssigned = await _userRoleRepository.UserHasRoleAsync(command.UserId, roleId, cancellationToken);
                     if (isAlreadyAssigned)
                     {
@@ -134,7 +134,7 @@ namespace Platform.Application.Core.Auth.Commands.Handlers
         }
 
         /// <summary>
-        /// Remover múltiples roles de un usuario
+        /// Remover mï¿½ltiples roles de un usuario
         /// </summary>
         public async Task<MultipleRoleRemovalResult> RemoveMultipleRolesFromUser(RemoveMultipleRolesFromUser command, CancellationToken cancellationToken)
         {

@@ -46,7 +46,7 @@ namespace Platform.Api.Extensions
         {
 
             // AutoMapper
-            services.AddAutoMapper(typeof(UserProfile), typeof(UserTypeProfile), typeof(PermissionProfile), typeof(AuthProfile), typeof(RoleProfile), typeof(RolePermissionProfile), typeof(MenuProfile), typeof(MenuPermissionProfile), typeof(UserTypePortalConfigProfile));
+            services.AddAutoMapper(typeof(UserProfile), typeof(UserTypeProfile), typeof(PermissionProfile), typeof(AuthProfile), typeof(RoleProfile), typeof(RolePermissionProfile), typeof(MenuProfile), typeof(MenuPermissionProfile));
 
             // Authentication Commands
             services.AddScoped<ILoginCommand, LoginCommand>();
@@ -152,7 +152,6 @@ namespace Platform.Api.Extensions
             services.AddScoped<IUserRoleRepository, UserRoleRepository>();
             services.AddScoped<IMenuRepository, MenuRepository>();
             services.AddScoped<IMenuPermissionRepository, MenuPermissionRepository>();
-            services.AddScoped<IUserTypePortalConfigRepository, UserTypePortalConfigRepository>();
             
             // Repositorios para países y relaciones con servicios
             services.AddScoped<IRepositoryBase<Country>, RepositoryBase<Country>>();

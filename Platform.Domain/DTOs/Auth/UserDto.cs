@@ -71,6 +71,17 @@ namespace Platform.Domain.DTOs.Auth
         public bool Status { get; set; }
     }
 
+    public class UpdateCurrentUserDto
+    {
+        public string? Email { get; set; }
+        public string? Name { get; set; }
+        public string? Image { get; set; }
+        public string? Phone { get; set; }
+        public Guid? UserTypeId { get; set; }
+        public string? Address { get; set; }
+        public Dictionary<string, object>? AdditionalData { get; set; }
+    }
+
     public class UserLoginDto
     {
         public string Email { get; set; } = null!;
