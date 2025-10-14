@@ -5,7 +5,7 @@ namespace Platform.Domain.DTOs.Auth
     public class UserFilterDto : PaginationRequestDto
     {
         /// <summary>
-        /// Búsqueda general en nombre y email del usuario
+        /// Búsqueda general en nombre, email y teléfono del usuario
         /// </summary>
         public string? Search { get; set; }
         

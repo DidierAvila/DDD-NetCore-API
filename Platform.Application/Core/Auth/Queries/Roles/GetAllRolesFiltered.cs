@@ -1,67 +1,47 @@
-using Platform.Domain.Repositories;
+using AutoMapper;
+using Microsoft.EntityFrameworkCore;
+using Platform.Application.Core.Common.Pagination;
 using Platform.Domain.DTOs.Auth;
 using Platform.Domain.DTOs.Common;
 using Platform.Domain.Entities.Auth;
+using Platform.Infrastructure.DbContexts;
 
 namespace Platform.Application.Core.Auth.Queries.Roles
 {
-    public class GetAllRolesFiltered
+    public class GetAllRolesFiltered : PaginationServiceBase<Role, RoleListResponseDto, RoleFilterDto>
     {
-        private readonly IRepositoryBase<Role> _roleRepository;
+        private readonly PlatformDbContext _context;
+        private readonly IMapper _mapper;
 
-        public GetAllRolesFiltered(IRepositoryBase<Role> roleRepository)
-        {
-            _roleRepository = roleRepository;
-        }
+    public GetAllRolesFiltered(PlatformDbContext context, IMapper mapper)
+    {
+        _context = context;
+        _mapper = mapper;
+    }
 
         public async Task<PaginationResponseDto<RoleListResponseDto>> GetRolesFiltered(RoleFilterDto filter, CancellationToken cancellationToken)
         {
-            // Validar y establecer valores por defecto
-            if (filter.Page <= 0) filter.Page = 1;
-            if (filter.PageSize <= 0) filter.PageSize = 10;
-            if (filter.PageSize > 100) filter.PageSize = 100;
+            // Usar la query directa del contexto de EF para mantener IAsyncQueryProvider
+            var baseQuery = _context.Roles
+                .Include(r => r.RolePermissions) // Incluir la relación real
+                .ThenInclude(rp => rp.Permission) // Luego incluir Permission
+                .Include(r => r.Users)       // Para UserCount
+                .AsQueryable();
 
-            // Obtener todos los roles
-            var allRoles = await _roleRepository.GetAll(cancellationToken);
-            var query = allRoles.AsQueryable();
-
-            // Aplicar filtros
-            query = ApplyFilters(query, filter);
-
-            // Contar total de registros
-            var totalRecords = query.Count();
-
-            // Aplicar ordenamiento
-            query = ApplySorting(query, filter.SortBy);
-
-            // Aplicar paginación
-            var roles = query
-                .Skip((filter.Page - 1) * filter.PageSize)
-                .Take(filter.PageSize)
-                .ToList();
-
-            // Mapear a DTOs
-            var roleDtos = roles.Select(r => new RoleListResponseDto
-            {
-                Id = r.Id,
-                Name = r.Name,
-                Description = r.Description,
-                Status = r.Status,
-                UserCount = r.Users?.Count ?? 0,
-                PermissionCount = r.Permissions?.Count ?? 0,
-                CreatedAt = r.CreatedAt
-            }).ToList();
-
-            return roleDtos.ToPaginatedResult(
-                filter.Page, 
-                filter.PageSize, 
-                totalRecords, 
-                filter.SortBy);
+            return await GetPaginatedAsync(baseQuery, filter, cancellationToken);
         }
 
-        private static IQueryable<Role> ApplyFilters(IQueryable<Role> query, RoleFilterDto filter)
+        protected override IQueryable<Role> ApplyFilters(IQueryable<Role> query, RoleFilterDto filter)
         {
-            // Filtro por nombre
+            // Búsqueda general en nombre y descripción
+            if (!string.IsNullOrWhiteSpace(filter.Search))
+            {
+                var searchTerm = filter.Search.ToLower();
+                query = query.Where(r => r.Name.ToLower().Contains(searchTerm) || 
+                                        (r.Description != null && r.Description.ToLower().Contains(searchTerm)));
+            }
+            
+            // Filtro por nombre específico
             if (!string.IsNullOrWhiteSpace(filter.Name))
             {
                 query = query.Where(r => r.Name.ToLower().Contains(filter.Name.ToLower()));
@@ -76,22 +56,31 @@ namespace Platform.Application.Core.Auth.Queries.Roles
             return query;
         }
 
-        private static IQueryable<Role> ApplySorting(IQueryable<Role> query, string? sortBy)
+        protected override IQueryable<Role> ApplySorting(IQueryable<Role> query, string? sortBy, bool sortDescending)
         {
-            if (string.IsNullOrEmpty(sortBy))
-            {
-                // Ordenamiento por defecto
-                return query.OrderBy(r => r.Name);
-            }
+            return SortingHelper.CreateSortingBuilder(query)
+                .AddSortMapping("name", r => r.Name)
+                .AddSortMapping("description", r => r.Description ?? string.Empty)
+                .AddSortMapping("status", r => r.Status)
+                .AddSortMapping("createdat", r => r.CreatedAt)
+                .SetDefaultSort(r => r.Name)
+                .ApplySorting(sortBy, sortDescending);
+        }
 
-            return sortBy.ToLower() switch
+        protected override async Task<IEnumerable<RoleListResponseDto>> MapToDto(IEnumerable<Role> entities, CancellationToken cancellationToken)
+        {
+            var roleDtos = entities.Select(r => new RoleListResponseDto
             {
-                "name" => query.OrderBy(r => r.Name),
-                "description" => query.OrderBy(r => r.Description),
-                "status" => query.OrderBy(r => r.Status),
-                "createdat" => query.OrderBy(r => r.CreatedAt),
-                _ => query.OrderBy(r => r.Name) // fallback al ordenamiento por defecto
-            };
+                Id = r.Id,
+                Name = r.Name,
+                Description = r.Description,
+                Status = r.Status,
+                UserCount = r.Users?.Count ?? 0,
+                PermissionCount = r.RolePermissions?.Count ?? 0, // Usar la relación real
+                CreatedAt = r.CreatedAt
+            }).ToList();
+
+            return await Task.FromResult(roleDtos);
         }
     }
 }

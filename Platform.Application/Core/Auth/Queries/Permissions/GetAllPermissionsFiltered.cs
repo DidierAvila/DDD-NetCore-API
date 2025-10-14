@@ -1,68 +1,45 @@
 using AutoMapper;
-using Platform.Domain.Repositories;
+using Microsoft.EntityFrameworkCore;
+using Platform.Application.Core.Common.Pagination;
 using Platform.Domain.DTOs.Auth;
 using Platform.Domain.DTOs.Common;
+using Platform.Infrastructure.DbContexts;
 
 namespace Platform.Application.Core.Auth.Queries.Permissions
 {
-    public class GetAllPermissionsFiltered
+    public class GetAllPermissionsFiltered : PaginationServiceBase<Domain.Entities.Auth.Permission, PermissionListResponseDto, PermissionFilterDto>
     {
-        private readonly IRepositoryBase<Domain.Entities.Auth.Permission> _permissionRepository;
+        private readonly PlatformDbContext _context;
         private readonly IMapper _mapper;
 
-        public GetAllPermissionsFiltered(IRepositoryBase<Domain.Entities.Auth.Permission> permissionRepository, IMapper mapper)
+        public GetAllPermissionsFiltered(PlatformDbContext context, IMapper mapper)
         {
-            _permissionRepository = permissionRepository;
+            _context = context;
             _mapper = mapper;
         }
 
         public async Task<PaginationResponseDto<PermissionListResponseDto>> GetPermissionsFiltered(PermissionFilterDto filter, CancellationToken cancellationToken)
         {
-            // Validar y establecer valores por defecto
-            if (filter.Page <= 0) filter.Page = 1;
-            if (filter.PageSize <= 0) filter.PageSize = 10;
-            if (filter.PageSize > 100) filter.PageSize = 100;
+            // Usar la query directa del contexto de EF para mantener IAsyncQueryProvider
+            var baseQuery = _context.Permissions
+                .Include(p => p.RolePermissions) // Incluir la relación real
+                .ThenInclude(rp => rp.Role) // Luego incluir Role
+                .AsQueryable();
 
-            // Obtener todos los permisos
-            var allPermissions = await _permissionRepository.GetAll(cancellationToken);
-            var query = allPermissions.AsQueryable();
-
-            // Aplicar filtros
-            query = ApplyFilters(query, filter);
-
-            // Contar total de registros
-            var totalRecords = query.Count();
-
-            // Aplicar ordenamiento
-            query = ApplySorting(query, filter.SortBy);
-
-            // Aplicar paginación
-            var permissions = query
-                .Skip((filter.Page - 1) * filter.PageSize)
-                .Take(filter.PageSize)
-                .ToList();
-
-            // Mapear a DTOs
-            var permissionDtos = permissions.Select(p => new PermissionListResponseDto
-            {
-                Id = p.Id,
-                Name = p.Name,
-                Description = p.Description,
-                Status = p.Status,
-                RoleCount = p.Roles?.Count ?? 0,
-                CreatedAt = p.CreatedAt
-            }).ToList();
-
-            return permissionDtos.ToPaginatedResult(
-                filter.Page, 
-                filter.PageSize, 
-                totalRecords, 
-                filter.SortBy);
+            return await GetPaginatedAsync(baseQuery, filter, cancellationToken);
         }
 
-        private IQueryable<Domain.Entities.Auth.Permission> ApplyFilters(IQueryable<Domain.Entities.Auth.Permission> query, PermissionFilterDto filter)
+        protected override IQueryable<Domain.Entities.Auth.Permission> ApplyFilters(IQueryable<Domain.Entities.Auth.Permission> query, PermissionFilterDto filter)
         {
-            // Filtro por nombre
+            // Búsqueda general en nombre y descripción
+            if (!string.IsNullOrWhiteSpace(filter.Search))
+            {
+                var searchTerm = filter.Search.ToLower();
+                query = query.Where(p => p.Name.ToLower().Contains(searchTerm) || 
+                                        (p.Description != null && p.Description.ToLower().Contains(searchTerm)));
+            }
+            
+            // Filtro por nombre específico
             if (!string.IsNullOrWhiteSpace(filter.Name))
             {
                 query = query.Where(p => p.Name.ToLower().Contains(filter.Name.ToLower()));
@@ -77,22 +54,30 @@ namespace Platform.Application.Core.Auth.Queries.Permissions
             return query;
         }
 
-        private IQueryable<Domain.Entities.Auth.Permission> ApplySorting(IQueryable<Domain.Entities.Auth.Permission> query, string? sortBy)
+        protected override IQueryable<Domain.Entities.Auth.Permission> ApplySorting(IQueryable<Domain.Entities.Auth.Permission> query, string? sortBy, bool sortDescending)
         {
-            if (string.IsNullOrEmpty(sortBy))
-            {
-                // Ordenamiento por defecto
-                return query.OrderBy(p => p.Name);
-            }
+            return SortingHelper.CreateSortingBuilder(query)
+                .AddSortMapping("name", p => p.Name)
+                .AddSortMapping("description", p => p.Description ?? string.Empty)
+                .AddSortMapping("status", p => p.Status)
+                .AddSortMapping("createdat", p => p.CreatedAt)
+                .SetDefaultSort(p => p.Name)
+                .ApplySorting(sortBy, sortDescending);
+        }
 
-            return sortBy.ToLower() switch
+        protected override async Task<IEnumerable<PermissionListResponseDto>> MapToDto(IEnumerable<Domain.Entities.Auth.Permission> entities, CancellationToken cancellationToken)
+        {
+            var permissionDtos = entities.Select(p => new PermissionListResponseDto
             {
-                "name" => query.OrderBy(p => p.Name),
-                "description" => query.OrderBy(p => p.Description),
-                "status" => query.OrderBy(p => p.Status),
-                "createdat" => query.OrderBy(p => p.CreatedAt),
-                _ => query.OrderBy(p => p.Name) // fallback al ordenamiento por defecto
-            };
+                Id = p.Id,
+                Name = p.Name,
+                Description = p.Description,
+                Status = p.Status,
+                RoleCount = p.RolePermissions?.Count ?? 0, // Usar la relación real
+                CreatedAt = p.CreatedAt
+            }).ToList();
+
+            return await Task.FromResult(permissionDtos);
         }
     }
 }

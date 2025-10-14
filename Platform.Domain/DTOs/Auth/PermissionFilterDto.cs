@@ -5,7 +5,12 @@ namespace Platform.Domain.DTOs.Auth
     public class PermissionFilterDto : PaginationRequestDto
     {
         /// <summary>
-        /// Filtrar por nombre del permiso
+        /// Búsqueda general en nombre y descripción del permiso
+        /// </summary>
+        public string? Search { get; set; }
+        
+        /// <summary>
+        /// Filtrar por nombre específico del permiso
         /// </summary>
         public string? Name { get; set; }
         

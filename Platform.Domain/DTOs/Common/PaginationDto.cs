@@ -23,11 +23,65 @@ namespace Platform.Domain.DTOs.Common
         /// Campo por el cual ordenar los resultados (ascendente). Campos disponibles varían por entidad.
         /// </summary>
         public string? SortBy { get; set; }
+
+        /// <summary>
+        /// Indica si el ordenamiento es descendente
+        /// </summary>
+        [DefaultValue(false)]
+        public bool SortDescending { get; set; } = false;
+    }
+
+    /// <summary>
+    /// Filtro base con búsqueda general
+    /// </summary>
+    public class SearchablePaginationRequestDto : PaginationRequestDto
+    {
+        /// <summary>
+        /// Término de búsqueda general
+        /// </summary>
+        public string? Search { get; set; }
+    }
+
+    /// <summary>
+    /// Filtro base con rango de fechas
+    /// </summary>
+    public class DateRangePaginationRequestDto : PaginationRequestDto
+    {
+        /// <summary>
+        /// Fecha de creación desde
+        /// </summary>
+        public DateTime? CreatedFrom { get; set; }
+
+        /// <summary>
+        /// Fecha de creación hasta
+        /// </summary>
+        public DateTime? CreatedTo { get; set; }
+    }
+
+    /// <summary>
+    /// Filtro base completo con búsqueda y rango de fechas
+    /// </summary>
+    public class FullPaginationRequestDto : SearchablePaginationRequestDto
+    {
+        /// <summary>
+        /// Fecha de creación desde
+        /// </summary>
+        public DateTime? CreatedFrom { get; set; }
+
+        /// <summary>
+        /// Fecha de creación hasta
+        /// </summary>
+        public DateTime? CreatedTo { get; set; }
+
+        /// <summary>
+        /// Filtrar por estado activo/inactivo
+        /// </summary>
+        public bool? Status { get; set; }
     }
 
     public class PaginationResponseDto<T>
     {
-        public IEnumerable<T> Data { get; set; } = new List<T>();
+        public IEnumerable<T> Data { get; set; } = [];
         public int TotalRecords { get; set; }
         public int TotalPages { get; set; }
         public int CurrentPage { get; set; }

@@ -1,112 +1,57 @@
 using AutoMapper;
-using Platform.Domain.Repositories;
+using Microsoft.EntityFrameworkCore;
+using Platform.Application.Core.Common.Pagination;
 using Platform.Domain.DTOs.Auth;
 using Platform.Domain.DTOs.Common;
 using Platform.Domain.Entities.Auth;
+using Platform.Infrastructure.DbContexts;
 
 namespace Platform.Application.Core.Auth.Queries.Users
 {
-    public class GetAllUsersFiltered
+    public class GetAllUsersFiltered : PaginationServiceBase<User, UserBasicDto, UserFilterDto>
     {
-        private readonly IRepositoryBase<User> _userRepository;
-        private readonly IRepositoryBase<UserType> _userTypeRepository;
-        private readonly IRepositoryBase<Role> _roleRepository;
-        private readonly IRepositoryBase<UserRole> _userRoleRepository;
+        private readonly PlatformDbContext _context;
         private readonly IMapper _mapper;
 
-        public GetAllUsersFiltered(IRepositoryBase<User> userRepository, IRepositoryBase<UserType> userTypeRepository, IRepositoryBase<Role> roleRepository, IRepositoryBase<UserRole> userRoleRepository, IMapper mapper)
+        public GetAllUsersFiltered(PlatformDbContext context, IMapper mapper)
         {
-            _userRepository = userRepository;
-            _userTypeRepository = userTypeRepository;
-            _roleRepository = roleRepository;
-            _userRoleRepository = userRoleRepository;
+            _context = context;
             _mapper = mapper;
         }
 
-        public async Task<PaginationResponseDto<UserBasicDto>> HandleAsync(UserFilterDto filter, CancellationToken cancellationToken)
+        public async Task<PaginationResponseDto<UserBasicDto>> HandleAsync(UserFilterDto filter, CancellationToken cancellationToken = default)
         {
-            // Validar parámetros de paginación
-            if (filter.Page <= 0) filter.Page = 1;
-            if (filter.PageSize <= 0) filter.PageSize = 10;
-            if (filter.PageSize > 100) filter.PageSize = 100;
+            var query = _context.Users
+                .Include(u => u.UserType)
+                .Include(u => u.Roles)
+                .AsQueryable();
 
-            // Obtener datos por separado para evitar problemas de navegación
-            var allUsers = await _userRepository.GetAll(cancellationToken);
-            var userTypes = await _userTypeRepository.GetAll(cancellationToken);
-            var roles = await _roleRepository.GetAll(cancellationToken);
-            var userRoles = await _userRoleRepository.GetAll(cancellationToken);
-
-            var query = allUsers.AsQueryable();
-
-            // Aplicar filtros
-            query = ApplyFilters(query, filter);
-
-            // Contar total de registros
-            var totalRecords = query.Count();
-
-            // Aplicar ordenamiento
-            query = ApplySorting(query, filter.SortBy);
-
-            // Aplicar paginación
-            var users = query
-                .Skip((filter.Page - 1) * filter.PageSize)
-                .Take(filter.PageSize)
-                .ToList();
-
-            // Mapear a DTOs con datos cargados por separado
-            var userDtos = users.Select(u => {
-                var userType = userTypes.FirstOrDefault(ut => ut.Id == u.UserTypeId);
-                
-                // Buscar el primer rol del usuario
-                var firstUserRole = userRoles.FirstOrDefault(ur => ur.UserId == u.Id);
-                var firstRole = firstUserRole != null ? roles.FirstOrDefault(r => r.Id == firstUserRole.RoleId) : null;
-                
-                return new UserBasicDto
-                {
-                    Id = u.Id,
-                    Name = u.Name,
-                    Email = u.Email,
-                    Image = u.Image,
-                    Status = u.Status,
-                    UserTypeId = u.UserTypeId,
-                    UserTypeName = userType?.Name,
-                    FirstRoleName = firstRole?.Name,
-                    CreatedAt = u.CreatedAt ?? DateTime.MinValue, // Manejo de nullable
-                    UpdatedAt = u.UpdatedAt
-                };
-            }).ToList();
-
-            return userDtos.ToPaginatedResult(
-                filter.Page, 
-                filter.PageSize, 
-                totalRecords, 
-                filter.SortBy);
+            return await GetPaginatedAsync(query, filter, cancellationToken);
         }
 
-        private IQueryable<User> ApplyFilters(IQueryable<User> query, UserFilterDto filter)
+        protected override IQueryable<User> ApplyFilters(IQueryable<User> query, UserFilterDto filter)
         {
-            // Filtro por búsqueda general (solo Name y Email ya que Username no existe)
+            // Filtro de búsqueda general (nombre, email y teléfono)
             if (!string.IsNullOrWhiteSpace(filter.Search))
             {
-                var searchTerm = filter.Search.ToLower();
-                query = query.Where(u => 
-                    u.Name.ToLower().Contains(searchTerm) ||
-                    u.Email.ToLower().Contains(searchTerm));
+                query = query.Where(u => u.Name.Contains(filter.Search) ||
+                                       u.Email.Contains(filter.Search) ||
+                                       (u.Phone != null && u.Phone.Contains(filter.Search)));
             }
 
-            // Filtro por nombre
+            // Filtro por nombre específico
             if (!string.IsNullOrWhiteSpace(filter.Name))
             {
-                query = query.Where(u => u.Name.ToLower().Contains(filter.Name.ToLower()));
+                query = query.Where(u => u.Name.Contains(filter.Name));
             }
 
-            // Filtro por email
+            // Filtro por email específico
             if (!string.IsNullOrWhiteSpace(filter.Email))
             {
-                query = query.Where(u => u.Email.ToLower().Contains(filter.Email.ToLower()));
+                query = query.Where(u => u.Email.Contains(filter.Email));
             }
 
-            // Filtro por rol - usando la colección Roles
+            // Filtro por rol
             if (filter.RoleId.HasValue)
             {
                 query = query.Where(u => u.Roles.Any(r => r.Id == filter.RoleId.Value));
@@ -118,19 +63,14 @@ namespace Platform.Application.Core.Auth.Queries.Users
                 query = query.Where(u => u.UserTypeId == filter.UserTypeId.Value);
             }
 
-            // Filtro por estado - omitido ya que no existe en la entidad actual
-            // if (filter.Status.HasValue)
-            // {
-            //     query = query.Where(u => u.Status == filter.Status.Value);
-            // }
-
-            // Filtro por fecha de creación
-            if (filter.CreatedAfter.HasValue && filter.CreatedAfter.HasValue)
+            // Filtro por fecha de creación (después de)
+            if (filter.CreatedAfter.HasValue)
             {
                 query = query.Where(u => u.CreatedAt >= filter.CreatedAfter.Value);
             }
 
-            if (filter.CreatedBefore.HasValue && filter.CreatedBefore.HasValue)
+            // Filtro por fecha de creación (antes de)
+            if (filter.CreatedBefore.HasValue)
             {
                 query = query.Where(u => u.CreatedAt <= filter.CreatedBefore.Value);
             }
@@ -138,23 +78,21 @@ namespace Platform.Application.Core.Auth.Queries.Users
             return query;
         }
 
-        private IQueryable<User> ApplySorting(IQueryable<User> query, string? sortBy)
+        protected override IQueryable<User> ApplySorting(IQueryable<User> query, string? sortBy, bool sortDescending)
         {
-            if (string.IsNullOrEmpty(sortBy))
-            {
-                // Ordenamiento por defecto
-                return query.OrderBy(u => u.Name);
-            }
+            return SortingHelper.CreateSortingBuilder(query)
+                .AddSortMapping("name", u => u.Name)
+                .AddSortMapping("email", u => u.Email)
+                .AddSortMapping("createdat", u => u.CreatedAt ?? DateTime.MinValue)
+                .AddSortMapping("usertypeid", u => u.UserTypeId)
+                .SetDefaultSort(u => u.Name)
+                .ApplySorting(sortBy, sortDescending);
+        }
 
-            return sortBy.ToLower() switch
-            {
-                "name" => query.OrderBy(u => u.Name),
-                "email" => query.OrderBy(u => u.Email),
-                "username" => query.OrderBy(u => u.Email), // Usando email como username
-                "createdat" => query.OrderBy(u => u.CreatedAt),
-                "usertypeid" => query.OrderBy(u => u.UserTypeId),
-                _ => query.OrderBy(u => u.Name) // fallback al ordenamiento por defecto
-            };
+        protected override async Task<IEnumerable<UserBasicDto>> MapToDto(IEnumerable<User> entities, CancellationToken cancellationToken)
+        {
+            IEnumerable<UserBasicDto> userTypeDtos = _mapper.Map<IEnumerable<UserBasicDto>>(entities);
+            return await Task.FromResult(userTypeDtos);
         }
     }
 }
