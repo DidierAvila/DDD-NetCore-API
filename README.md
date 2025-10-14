@@ -93,7 +93,7 @@ Actualizar la cadena de conexión en `Platform.Api/appsettings.Development.json`
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=PlatformDB;Trusted_Connection=true;MultipleActiveResultSets=true"
+    "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=Platform;Trusted_Connection=true;MultipleActiveResultSets=true"
   }
 }
 ```
