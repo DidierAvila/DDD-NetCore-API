@@ -1,67 +1,45 @@
 using AutoMapper;
-using Platform.Domain.Repositories;
+using Microsoft.EntityFrameworkCore;
+using Platform.Application.Core.Common.Pagination;
 using Platform.Domain.DTOs.Auth;
 using Platform.Domain.DTOs.Common;
 using Platform.Domain.Entities.Auth;
+using Platform.Infrastructure.DbContexts;
 
 namespace Platform.Application.Core.Auth.Queries.UserTypes
 {
-    public class GetAllUserTypesFiltered
+    public class GetAllUserTypesFiltered : PaginationServiceBase<UserType, UserTypeListResponseDto, UserTypeFilterDto>
     {
-        private readonly IRepositoryBase<UserType> _userTypeRepository;
+        private readonly PlatformDbContext _context;
+        private readonly IMapper _mapper;
 
-        public GetAllUserTypesFiltered(IRepositoryBase<UserType> userTypeRepository)
+        public GetAllUserTypesFiltered(PlatformDbContext context, IMapper mapper)
         {
-            _userTypeRepository = userTypeRepository;
+            _context = context;
+            _mapper = mapper;
         }
 
         public async Task<PaginationResponseDto<UserTypeListResponseDto>> GetUserTypesFiltered(UserTypeFilterDto filter, CancellationToken cancellationToken)
         {
+            // Usar la query directa del contexto de EF para mantener IAsyncQueryProvider
+            var baseQuery = _context.UserTypes
+                .Include(ut => ut.Users) // Para UserCount si es necesario
+                .AsQueryable();
 
-            // Validar y establecer valores por defecto
-            if (filter.Page <= 0) filter.Page = 1;
-            if (filter.PageSize <= 0) filter.PageSize = 10;
-            if (filter.PageSize > 100) filter.PageSize = 100;
-
-            // Obtener todos los tipos de usuario
-            var allUserTypes = await _userTypeRepository.GetAll(cancellationToken);
-            var query = allUserTypes.AsQueryable();
-
-            // Aplicar filtros
-            query = ApplyFilters(query, filter);
-
-            // Contar total de registros
-            var totalRecords = query.Count();
-
-            // Aplicar ordenamiento
-            query = ApplySorting(query, filter.SortBy);
-
-            // Aplicar paginación
-            var userTypes = query
-                .Skip((filter.Page - 1) * filter.PageSize)
-                .Take(filter.PageSize)
-                .ToList();
-
-            // Mapear a DTOs
-            var userTypeDtos = userTypes.Select(ut => new UserTypeListResponseDto
-            {
-                Id = ut.Id,
-                Name = ut.Name,
-                Description = ut.Description,
-                Status = ut.Status,
-                UserCount = ut.Users?.Count ?? 0
-            }).ToList();
-
-            return userTypeDtos.ToPaginatedResult(
-                filter.Page, 
-                filter.PageSize, 
-                totalRecords, 
-                filter.SortBy);
+            return await GetPaginatedAsync(baseQuery, filter, cancellationToken);
         }
 
-        private static IQueryable<UserType> ApplyFilters(IQueryable<UserType> query, UserTypeFilterDto filter)
+        protected override IQueryable<UserType> ApplyFilters(IQueryable<UserType> query, UserTypeFilterDto filter)
         {
-            // Filtro por nombre
+            // Búsqueda general en nombre y descripción
+            if (!string.IsNullOrWhiteSpace(filter.Search))
+            {
+                var searchTerm = filter.Search.ToLower();
+                query = query.Where(ut => ut.Name.ToLower().Contains(searchTerm) || 
+                                         (ut.Description != null && ut.Description.ToLower().Contains(searchTerm)));
+            }
+            
+            // Filtro por nombre específico
             if (!string.IsNullOrWhiteSpace(filter.Name))
             {
                 query = query.Where(ut => ut.Name.ToLower().Contains(filter.Name.ToLower()));
@@ -76,21 +54,20 @@ namespace Platform.Application.Core.Auth.Queries.UserTypes
             return query;
         }
 
-        private IQueryable<UserType> ApplySorting(IQueryable<UserType> query, string? sortBy)
+        protected override IQueryable<UserType> ApplySorting(IQueryable<UserType> query, string? sortBy, bool sortDescending)
         {
-            if (string.IsNullOrEmpty(sortBy))
-            {
-                // Ordenamiento por defecto
-                return query.OrderBy(ut => ut.Name);
-            }
+            return SortingHelper.CreateSortingBuilder(query)
+                .AddSortMapping("name", ut => ut.Name)
+                .AddSortMapping("description", ut => ut.Description ?? string.Empty)
+                .AddSortMapping("status", ut => ut.Status)
+                .SetDefaultSort(ut => ut.Name)
+                .ApplySorting(sortBy, sortDescending);
+        }
 
-            return sortBy.ToLower() switch
-            {
-                "name" => query.OrderBy(ut => ut.Name),
-                "description" => query.OrderBy(ut => ut.Description),
-                "status" => query.OrderBy(ut => ut.Status),
-                _ => query.OrderBy(ut => ut.Name) // fallback al ordenamiento por defecto
-            };
+        protected override async Task<IEnumerable<UserTypeListResponseDto>> MapToDto(IEnumerable<UserType> entities, CancellationToken cancellationToken)
+        {
+            IEnumerable<UserTypeListResponseDto> userTypeDtos = _mapper.Map<IEnumerable<UserTypeListResponseDto>>(entities);
+            return await Task.FromResult(userTypeDtos);
         }
     }
 }

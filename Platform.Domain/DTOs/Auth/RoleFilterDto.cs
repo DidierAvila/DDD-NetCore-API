@@ -5,7 +5,12 @@ namespace Platform.Domain.DTOs.Auth
     public class RoleFilterDto : PaginationRequestDto
     {
         /// <summary>
-        /// Filtrar por nombre del rol
+        /// Búsqueda general en nombre y descripción del rol
+        /// </summary>
+        public string? Search { get; set; }
+        
+        /// <summary>
+        /// Filtrar por nombre específico del rol
         /// </summary>
         public string? Name { get; set; }
         

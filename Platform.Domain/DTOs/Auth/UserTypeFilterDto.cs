@@ -5,7 +5,12 @@ namespace Platform.Domain.DTOs.Auth
     public class UserTypeFilterDto : PaginationRequestDto
     {
         /// <summary>
-        /// Filtrar por nombre del tipo de usuario
+        /// Búsqueda general en nombre y descripción del tipo de usuario
+        /// </summary>
+        public string? Search { get; set; }
+        
+        /// <summary>
+        /// Filtrar por nombre específico del tipo de usuario
         /// </summary>
         public string? Name { get; set; }
         
@@ -21,7 +26,11 @@ namespace Platform.Domain.DTOs.Auth
         public string Name { get; set; } = null!;
         public string? Description { get; set; }
         public bool Status { get; set; }
-        public int UserCount { get; set; } // Cantidad de usuarios con este tipo
+        public int UserCount { get; set; }
+        public string? Theme { get; set; }
+        public string? DefaultLandingPage { get; set; }
+        public string? LogoUrl { get; set; }
+        public string? Language { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
     }
