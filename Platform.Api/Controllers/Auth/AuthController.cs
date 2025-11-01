@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Platform.Application.Core.Auth.Commands.Authentication;
+using Platform.Application.Core.Auth.Commands.Handlers;
 using Platform.Application.Core.Auth.Queries.Handlers;
 using Platform.Application.Utils;
 using Platform.Domain.DTOs.Auth;
@@ -17,6 +18,8 @@ namespace Platform.Api.Controllers.Auth
         private readonly ILogger<AuthController> _logger;
         private readonly ILoginCommand _loginCommand;
         private readonly IUserMeQueryHandler _userMeQueryHandler;
+        private readonly IUserCommandHandler _userCommandHandler;
+        private readonly IExternalLoginCommand _externalLoginCommand;
 
         /// <summary>
         /// Constructor de la clase AuthController.
@@ -24,8 +27,14 @@ namespace Platform.Api.Controllers.Auth
         /// <param name="loginCommand">Comando para manejar el inicio de sesión.</param>
         /// <param name="logger">Instancia del logger para registrar información.</param>
         /// <param name="userMeQueryHandler">Handler para obtener información del usuario autenticado.</param>
-        public AuthController(ILoginCommand loginCommand, ILogger<AuthController> logger, IUserMeQueryHandler userMeQueryHandler)
-            => (_loginCommand, _logger, _userMeQueryHandler) = (loginCommand, logger, userMeQueryHandler);
+        public AuthController(
+            ILoginCommand loginCommand, 
+            ILogger<AuthController> logger, 
+            IUserMeQueryHandler userMeQueryHandler, 
+            IUserCommandHandler userCommandHandler, 
+            IExternalLoginCommand externalLoginCommand)
+            => (_loginCommand, _logger, _userMeQueryHandler, _userCommandHandler, _externalLoginCommand) 
+            = (loginCommand, logger, userMeQueryHandler, userCommandHandler, externalLoginCommand);
 
         /// <summary>
         /// Inicia sesión en el sistema con las credenciales proporcionadas.
@@ -111,6 +120,144 @@ namespace Platform.Api.Controllers.Auth
                     message = "Internal server error",
                     error = ex.Message
                 });
+            }
+        }
+
+        /// <summary>
+        /// Actualiza los datos personales del usuario autenticado
+        /// </summary>
+        /// <param name="updateDto">Datos a actualizar del usuario</param>
+        /// <param name="cancellationToken">Token de cancelación</param>
+        /// <returns>Usuario actualizado</returns>
+        /// <response code="200">Retorna el usuario actualizado</response>
+        /// <response code="401">Usuario no autenticado o token inválido</response>
+        /// <response code="404">Usuario no encontrado</response>
+        /// <response code="500">Error interno del servidor</response>
+        [HttpPut]
+        [Route("me/update")]
+        [Authorize]
+        [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<UserDto>> UpdateCurrentUser([FromBody] UpdateCurrentUserDto updateDto, CancellationToken cancellationToken)
+        {
+            try
+            {
+                _logger.LogInformation("UpdateCurrentUser endpoint called");
+
+                // Obtener el ID del usuario desde el token JWT
+                var userIdClaim = User.FindFirst(CustomClaimTypes.UserId)?.Value;
+                _logger.LogInformation("User ID claim from token: {UserId}", userIdClaim);
+
+                if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+                {
+                    _logger.LogWarning("Invalid or missing user ID in token");
+                    return Unauthorized(new { message = "Invalid or missing user ID in token" });
+                }
+
+                _logger.LogInformation("Parsed user ID: {UserId}", userId);
+
+                // Crear el DTO para actualizar el usuario
+                var updateUserDto = new UpdateUserDto
+                {
+                    Name = updateDto.Name,
+                    Email = updateDto.Email,
+                    Phone = updateDto.Phone,
+                    Image = updateDto.Image,
+                    Address = updateDto.Address,
+                    UserTypeId = updateDto.UserTypeId,
+                    AdditionalData = updateDto.AdditionalData  
+                };
+
+                // Llamar al servicio existente de actualización de usuarios
+                var updatedUser = await _userCommandHandler.UpdateUser(userId, updateUserDto, cancellationToken);
+
+                _logger.LogInformation("Successfully updated user with ID: {UserId}", userId);
+                return Ok(updatedUser);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogError(ex, "User not found in database");
+                return NotFound(new
+                {
+                    success = false,
+                    message = ex.Message
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating user information");
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "Internal server error",
+                    error = ex.Message
+                });
+            }
+        }
+
+        /// <summary>
+        /// Login externo con Google. Recibe un id_token de Google y devuelve un JWT local.
+        /// </summary>
+        /// <param name="request">Solicitud con el id_token de Google y proveedor.</param>
+        /// <param name="cancellationToken">Token de cancelación.</param>
+        /// <returns>Token JWT local si el login es válido.</returns>
+        /// <response code="200">Retorna el token JWT emitido por el sistema.</response>
+        /// <response code="400">Solicitud inválida.</response>
+        /// <response code="401">Token de Google inválido o usuario inactivo.</response>
+        /// <response code="404">Usuario no encontrado para el email del token de Google.</response>
+        /// <response code="500">Error interno del servidor.</response>
+        [HttpPost("external-login")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<LoginResponse>> ExternalLogin([FromBody] ExternalLoginRequest request, CancellationToken cancellationToken)
+        {
+            try
+            {
+                _logger.LogInformation("ExternalLogin endpoint called");
+
+                if (request == null || string.IsNullOrWhiteSpace(request.IdToken))
+                {
+                    return BadRequest(new { message = "id_token es requerido" });
+                }
+
+                var result = await _externalLoginCommand.ExternalLogin(request, cancellationToken);
+                if (result == null || string.IsNullOrWhiteSpace(result.Token))
+                {
+                    return Unauthorized(new { message = "No se pudo generar el token" });
+                }
+
+                return Ok(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "Usuario no encontrado para login externo");
+                return NotFound(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning(ex, "Acceso no autorizado en login externo");
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (NotSupportedException ex)
+            {
+                _logger.LogWarning(ex, "Proveedor externo no soportado");
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(ex, "Solicitud inválida en login externo");
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en ExternalLogin");
+                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
             }
         }
     }

@@ -20,7 +20,6 @@ namespace Platform.Infrastructure.DbContexts
         public virtual DbSet<User> Users { get; set; }
         public virtual DbSet<UserRole> UserRoles { get; set; }
         public virtual DbSet<UserType> UserTypes { get; set; }
-        public virtual DbSet<UserTypePortalConfig> UserTypePortalConfigs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -79,12 +78,6 @@ namespace Platform.Infrastructure.DbContexts
                 .WithMany(ut => ut.Users)
                 .HasForeignKey(u => u.UserTypeId)
                 .OnDelete(DeleteBehavior.Restrict);
-
-            modelBuilder.Entity<UserTypePortalConfig>()
-                .HasOne(utpc => utpc.UserType)
-                .WithMany()
-                .HasForeignKey(utpc => utpc.UserTypeId)
-                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Account>()
                 .HasOne(a => a.User)

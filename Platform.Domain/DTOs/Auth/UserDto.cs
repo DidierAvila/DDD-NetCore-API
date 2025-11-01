@@ -5,8 +5,8 @@ namespace Platform.Domain.DTOs.Auth
     public class UserDto
     {
         public Guid Id { get; set; }
-        public string Name { get; set; } = null!;
-        public string Email { get; set; } = null!;
+        public required string Name { get; set; }
+        public required string Email { get; set; }
         public string? Image { get; set; }
         public string? Phone { get; set; }
         public Guid UserTypeId { get; set; }
@@ -27,15 +27,15 @@ namespace Platform.Domain.DTOs.Auth
     {
         [Required(ErrorMessage = "Email is required")]
         [EmailAddress(ErrorMessage = "Invalid email format")]
-        public string Email { get; set; } = null!;
+        public required string Email { get; set; }
         
         [Required(ErrorMessage = "Name is required")]
         [StringLength(100, ErrorMessage = "Name cannot exceed 100 characters")]
-        public string Name { get; set; } = null!;
+        public required string Name { get; set; }
         
         [Required(ErrorMessage = "Password is required")]
         [StringLength(100, MinimumLength = 6, ErrorMessage = "Password must be between 6 and 100 characters")]
-        public string Password { get; set; } = null!;
+        public string? Password { get; set; }
         
         public string? Image { get; set; }
         public string? Phone { get; set; }
@@ -71,10 +71,15 @@ namespace Platform.Domain.DTOs.Auth
         public bool Status { get; set; }
     }
 
-    public class UserLoginDto
+    public class UpdateCurrentUserDto
     {
-        public string Email { get; set; } = null!;
-        public string Password { get; set; } = null!;
+        public string? Email { get; set; }
+        public string? Name { get; set; }
+        public string? Image { get; set; }
+        public string? Phone { get; set; }
+        public Guid? UserTypeId { get; set; }
+        public string? Address { get; set; }
+        public Dictionary<string, object>? AdditionalData { get; set; }
     }
 
     public class ChangePasswordDto
@@ -116,6 +121,7 @@ namespace Platform.Domain.DTOs.Auth
         public string? Phone { get; set; }
         public string? Image { get; set; }
         public string? UserTypeName { get; set; }
+        public string? Address { get; set; }
         public int RoleCount { get; set; }
         public DateTime? CreatedAt { get; set; }
         public DateTime? LastLoginAt { get; set; } // Desde Sessions si es necesario

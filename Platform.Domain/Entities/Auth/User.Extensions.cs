@@ -33,7 +33,7 @@ namespace Platform.Domain.Entities.Auth
             set
             {
                 _additionalData = value;
-                ExtraData = JsonSerializer.Serialize(value ?? new Dictionary<string, object>());
+                ExtraData = JsonSerializer.Serialize(value ?? []);
             }
         }
 
@@ -52,7 +52,7 @@ namespace Platform.Domain.Entities.Auth
                     }
                     catch
                     {
-                        return default(T);
+                        return default;
                     }
                 }
                 

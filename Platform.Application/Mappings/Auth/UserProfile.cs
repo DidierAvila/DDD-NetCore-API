@@ -18,12 +18,20 @@ namespace Platform.Application.Mappings.Auth
                     {
                         try
                         {
-                            dest.AdditionalData = JsonSerializer.Deserialize<Dictionary<string, object>>(src.ExtraData);
+                            var options = new JsonSerializerOptions
+                            {
+                                PropertyNameCaseInsensitive = true
+                            };
+                            dest.AdditionalData = JsonSerializer.Deserialize<Dictionary<string, object>>(src.ExtraData, options);
                         }
                         catch
                         {
-                            dest.AdditionalData = new Dictionary<string, object>();
+                            dest.AdditionalData = [];
                         }
+                    }
+                    else
+                    {
+                        dest.AdditionalData = [];
                     }
                 });
 
@@ -36,12 +44,20 @@ namespace Platform.Application.Mappings.Auth
                     {
                         try
                         {
-                            dest.AdditionalData = JsonSerializer.Deserialize<Dictionary<string, object>>(src.ExtraData);
+                            var options = new JsonSerializerOptions
+                            {
+                                PropertyNameCaseInsensitive = true
+                            };
+                            dest.AdditionalData = JsonSerializer.Deserialize<Dictionary<string, object>>(src.ExtraData, options);
                         }
                         catch
                         {
-                            dest.AdditionalData = new Dictionary<string, object>();
+                            dest.AdditionalData = [];
                         }
+                    }
+                    else
+                    {
+                        dest.AdditionalData = [];
                     }
                 });
 
@@ -51,10 +67,17 @@ namespace Platform.Application.Mappings.Auth
                 .ForMember(dest => dest.LastLoginAt, opt => opt.Ignore()); // Se puede mapear desde Sessions si es necesario
 
             // DTO to Entity mappings
+
+            CreateMap<UserDto, User>()
+                .ForMember(dest => dest.Roles, opt => opt.Ignore())
+                .ForMember(dest => dest.Accounts, opt => opt.Ignore())
+                .ForMember(dest => dest.Sessions, opt => opt.Ignore())
+                .ForMember(dest => dest.UserType, opt => opt.Ignore())
+                .ForMember(dest => dest.ExtraData, opt => opt.Ignore());
+
             CreateMap<CreateUserDto, User>()
                 .ForMember(dest => dest.Id, opt => opt.MapFrom(src => Guid.NewGuid()))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.Now))
-                .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => DateTime.Now))
                 .ForMember(dest => dest.ExtraData, opt => opt.MapFrom(src => "{}"))
                 .ForMember(dest => dest.Accounts, opt => opt.Ignore())
                 .ForMember(dest => dest.Sessions, opt => opt.Ignore())
@@ -90,7 +113,8 @@ namespace Platform.Application.Mappings.Auth
 
             // Mapeo optimizado sin AdditionalData para listas
             CreateMap<User, UserBasicDto>()
-                .ForMember(dest => dest.UserTypeName, opt => opt.Ignore()); // Se asignará manualmente
+                .ForMember(dest => dest.UserTypeName, opt => opt.MapFrom(src => src.UserType != null ? src.UserType.Name : null))
+                .ForMember(dest => dest.FirstRoleName, opt => opt.MapFrom(src => src.Roles != null && src.Roles.Any() ? src.Roles.First().Name : null));
         }
     }
 }

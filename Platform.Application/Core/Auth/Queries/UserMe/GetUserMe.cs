@@ -10,30 +10,30 @@ namespace Platform.Application.Core.Auth.Queries.UserMe
     {
         private readonly IRepositoryBase<User> _userRepository;
         private readonly IRepositoryBase<Role> _roleRepository;
+        private readonly IRepositoryBase<UserType> _userTypeRepository;
         private readonly IUserRoleRepository _userRoleRepository;
         private readonly IRolePermissionRepository _rolePermissionRepository;
         private readonly IMenuRepository _menuRepository;
         private readonly IMenuPermissionRepository _menuPermissionRepository;
-        private readonly IUserTypePortalConfigRepository _userTypePortalConfigRepository;
         private readonly IMapper _mapper;
 
         public GetUserMe(
             IRepositoryBase<User> userRepository,
             IRepositoryBase<Role> roleRepository,
+            IRepositoryBase<UserType> userTypeRepository,
             IUserRoleRepository userRoleRepository,
             IRolePermissionRepository rolePermissionRepository,
             IMenuRepository menuRepository,
             IMenuPermissionRepository menuPermissionRepository,
-            IUserTypePortalConfigRepository userTypePortalConfigRepository,
             IMapper mapper)
         {
             _userRepository = userRepository;
             _roleRepository = roleRepository;
+            _userTypeRepository = userTypeRepository;
             _userRoleRepository = userRoleRepository;
             _rolePermissionRepository = rolePermissionRepository;
             _menuRepository = menuRepository;
             _menuPermissionRepository = menuPermissionRepository;
-            _userTypePortalConfigRepository = userTypePortalConfigRepository;
             _mapper = mapper;
         }
 
@@ -65,14 +65,14 @@ namespace Platform.Application.Core.Auth.Queries.UserMe
             // Obtener roles del usuario (solo activos)
             var userRoles = await GetUserRolesOptimizedAsync(userId, cancellationToken);
 
-            // Obtener configuración personalizada del portal
-            var portalConfigs = await _userTypePortalConfigRepository.GetByUserTypeIdAsync(user.UserTypeId, cancellationToken);
-            var portalConfig = portalConfigs.FirstOrDefault();
-            UserTypePortalConfigDto? portalConfigDto = null;
+            // Obtener configuración personalizada del portal desde UserType
+            var userType = await _userTypeRepository.GetByID(user.UserTypeId, cancellationToken);
+            UserTypeDto? portalConfigDto = null;
             
-            if (portalConfig != null)
+            if (userType != null)
             {
-                portalConfigDto = _mapper.Map<UserTypePortalConfigDto>(portalConfig);
+                // Crear DTO de configuración a partir de UserType
+                portalConfigDto = _mapper.Map<UserTypeDto>(userType);
             }
             else
             {
@@ -134,7 +134,7 @@ namespace Platform.Application.Core.Auth.Queries.UserMe
         /// Genera una configuración de portal por defecto basada en los menús y permisos disponibles en la BD
         /// y la guarda en la base de datos
         /// </summary>
-        private async Task<UserTypePortalConfigDto> GenerateDefaultPortalConfigAsync(Guid userTypeId, List<UserRoleDto> userRoles, CancellationToken cancellationToken)
+        private async Task<UserTypeDto> GenerateDefaultPortalConfigAsync(Guid userTypeId, List<UserRoleDto> userRoles, CancellationToken cancellationToken)
         {
             // Obtener todos los permisos del usuario basados en sus roles
             var userPermissionIds = await GetUserPermissionIdsAsync(userRoles, cancellationToken);
@@ -151,26 +151,43 @@ namespace Platform.Application.Core.Auth.Queries.UserMe
                 menus = navigation
             };
             
-            // Crear la entidad UserTypePortalConfig para guardar en la BD
-            var portalConfigEntity = new UserTypePortalConfig
+            // Obtener el UserType existente
+            var userType = await _userTypeRepository.GetByID(userTypeId, cancellationToken);
+            
+            if (userType != null)
             {
-                Id = Guid.NewGuid(),
-                UserTypeId = userTypeId,
+                // Actualizar el UserType con la configuración por defecto
+                userType.Theme = "default";
+                userType.DefaultLandingPage = "/dashboard";
+                userType.Language = "es";
+                userType.AdditionalConfig = System.Text.Json.JsonSerializer.Serialize(additionalConfig);
+                userType.UpdatedAt = DateTime.Now;
+                
+                // Guardar los cambios
+                await _userTypeRepository.Update(userType, cancellationToken);
+                
+                // Crear DTO de configuración
+            return _mapper.Map<UserTypeDto>(userType);
+            }
+            
+            // Si no existe el UserType, devolver una configuración por defecto sin guardar
+            // Crear un UserType por defecto
+            var defaultUserType = new UserType
+            {
+                Id = userTypeId,
+                Name = "Default",
+                Description = "Default user type",
                 Status = true,
                 Theme = "default",
                 DefaultLandingPage = "/dashboard",
+                LogoUrl = "/images/logo.png",
                 Language = "es",
                 AdditionalConfig = System.Text.Json.JsonSerializer.Serialize(additionalConfig),
-                CreatedAt = DateTime.Now
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now
             };
             
-            // Guardar la configuración en la base de datos
-            var savedConfig = await _userTypePortalConfigRepository.UpsertConfigAsync(portalConfigEntity, cancellationToken);
-            
-            // Mapear la entidad guardada a DTO
-            var configDto = _mapper.Map<UserTypePortalConfigDto>(savedConfig);
-            
-            return configDto;
+            return _mapper.Map<UserTypeDto>(defaultUserType);
         }
 
         /// <summary>

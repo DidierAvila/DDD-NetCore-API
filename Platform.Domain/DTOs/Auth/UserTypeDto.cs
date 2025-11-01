@@ -6,6 +6,12 @@ namespace Platform.Domain.DTOs.Auth
         public string Name { get; set; } = null!;
         public string Description { get; set; } = null!;
         public bool Status { get; set; }
+        // Campos migrados desde UserTypePortalConfig
+        public string Theme { get; set; } = "default";
+        public string? DefaultLandingPage { get; set; }
+        public string? LogoUrl { get; set; }
+        public string Language { get; set; } = "es";
+        public System.Text.Json.JsonElement? AdditionalConfig { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
     }
@@ -15,6 +21,12 @@ namespace Platform.Domain.DTOs.Auth
         public string Name { get; set; } = null!;
         public string Description { get; set; } = null!;
         public bool Status { get; set; } = true;
+        // Campos migrados desde UserTypePortalConfig
+        public string Theme { get; set; } = "default";
+        public string? DefaultLandingPage { get; set; }
+        public string? LogoUrl { get; set; }
+        public string Language { get; set; } = "es";
+        public Dictionary<string, object>? AdditionalConfig { get; set; }
     }
 
     public class UpdateUserTypeDto
@@ -22,6 +34,12 @@ namespace Platform.Domain.DTOs.Auth
         public string Name { get; set; } = null!;
         public string Description { get; set; } = null!;
         public bool Status { get; set; }
+        // Campos migrados desde UserTypePortalConfig
+        public string Theme { get; set; } = "default";
+        public string? DefaultLandingPage { get; set; }
+        public string? LogoUrl { get; set; }
+        public string Language { get; set; } = "es";
+        public Dictionary<string, object>? AdditionalConfig { get; set; }
     }
 
     public class UserTypeSummaryDto

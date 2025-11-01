@@ -9,13 +9,16 @@ namespace Platform.Application.Services
     public class SessionInvalidationService
     {
         private readonly ISessionRepository _sessionRepository;
+        private readonly IUserRoleRepository _userRoleRepository;
         private readonly ILogger<SessionInvalidationService> _logger;
 
         public SessionInvalidationService(
             ISessionRepository sessionRepository,
+            IUserRoleRepository userRoleRepository,
             ILogger<SessionInvalidationService> logger)
         {
             _sessionRepository = sessionRepository;
+            _userRoleRepository = userRoleRepository;
             _logger = logger;
         }
 

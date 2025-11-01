@@ -4,6 +4,7 @@ using Platform.Application.Core.Auth.Commands.Menus;
 using Platform.Application.Core.Auth.Commands.Permissions;
 using Platform.Application.Core.Auth.Commands.RolePermissions;
 using Platform.Application.Core.Auth.Commands.Roles;
+using Platform.Application.Core.Auth.Commands.Tokens;
 using Platform.Application.Core.Auth.Commands.Users;
 using Platform.Application.Core.Auth.Commands.UserTypes;
 using Platform.Application.Core.Auth.Queries.Handlers;
@@ -38,10 +39,12 @@ namespace Platform.Api.Extensions
         {
 
             // AutoMapper
-            services.AddAutoMapper(typeof(UserProfile), typeof(UserTypeProfile), typeof(PermissionProfile), typeof(AuthProfile), typeof(RoleProfile), typeof(RolePermissionProfile), typeof(MenuProfile), typeof(MenuPermissionProfile), typeof(UserTypePortalConfigProfile));
+            services.AddAutoMapper(typeof(UserProfile), typeof(UserTypeProfile), typeof(PermissionProfile), typeof(AuthProfile), typeof(RoleProfile), typeof(RolePermissionProfile), typeof(MenuProfile), typeof(MenuPermissionProfile));
 
             // Authentication Commands
             services.AddScoped<ILoginCommand, LoginCommand>();
+            services.AddScoped<IExternalLoginCommand, ExternalLoginCommand>();
+            services.AddScoped<ITokenCommand, TokenCommand>();
 
             // User Commands
             services.AddScoped<CreateUser>();
@@ -142,7 +145,6 @@ namespace Platform.Api.Extensions
             services.AddScoped<IUserRoleRepository, UserRoleRepository>();
             services.AddScoped<IMenuRepository, MenuRepository>();
             services.AddScoped<IMenuPermissionRepository, MenuPermissionRepository>();
-            services.AddScoped<IUserTypePortalConfigRepository, UserTypePortalConfigRepository>();
 
             // Services
             services.AddScoped<SessionInvalidationService>();
