@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Platform.Domain.Entities.Auth
 {
-    [Table("Menus", Schema = "Auth")]
+    [Table("AuthMenus")]
     public class Menu
     {
         [Key]

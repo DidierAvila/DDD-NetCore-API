@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Platform.Domain.Entities.Auth;
 
-[Table("Roles", Schema = "Auth")]
+[Table("Roles")]
 public partial class Role
 {
     [Key]

@@ -6,8 +6,12 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Platform.Api.Extensions;
 using Platform.Infrastructure.DbContexts;
+using SQLitePCL;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Inicializar SQLite
+SQLitePCL.Batteries_V2.Init();
 
 // Add services to the container.
 
@@ -26,7 +30,7 @@ builder.Services.AddCors(options =>
               .AllowCredentials();
     });
 
-    // Política más permisiva para desarrollo
+    // Polï¿½tica mï¿½s permisiva para desarrollo
     options.AddPolicy("DevelopmentCors", policy =>
     {
         policy.AllowAnyOrigin()
@@ -41,7 +45,7 @@ builder.Services.AddSwaggerGen(c =>
     {
         Title = "Platform API",
         Version = "v1",
-        Description = "API RESTful principal de la solución, diseñada con un enfoque en la escalabilidad, mantenibilidad y la separación de preocupaciones siguiendo los principios de Domain-Driven Design (DDD) y la Arquitectura Limpia (Clean Architecture).",
+        Description = "API RESTful principal de la soluciï¿½n, diseï¿½ada con un enfoque en la escalabilidad, mantenibilidad y la separaciï¿½n de preocupaciones siguiendo los principios de Domain-Driven Design (DDD) y la Arquitectura Limpia (Clean Architecture).",
         Contact = new OpenApiContact
         {
             Name = "Equipo de Desarrollo Platform",
@@ -57,7 +61,7 @@ builder.Services.AddSwaggerGen(c =>
         c.IncludeXmlComments(xmlPath);
     }
 
-    // Configuración de autenticación JWT
+    // Configuraciï¿½n de autenticaciï¿½n JWT
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         In = ParameterLocation.Header,
@@ -86,14 +90,7 @@ builder.Services.AddSwaggerGen(c =>
 
 // Configure Entity Framework
 builder.Services.AddDbContext<PlatformDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"), sqlOptions =>
-    {
-        sqlOptions.CommandTimeout(120); // 2 minutos timeout para comandos
-        sqlOptions.EnableRetryOnFailure(
-            maxRetryCount: 3,
-            maxRetryDelay: TimeSpan.FromSeconds(30),
-            errorNumbersToAdd: null);
-    }));
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Configure extensions
 builder.Services.AddApiExtention();

@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Platform.Domain.Entities.Auth
 {
-    [Table("RolePermissions", Schema = "Auth")]
+    [Table("RolePermissions")]
     public class RolePermission
     {
         public Guid RoleId { get; set; }

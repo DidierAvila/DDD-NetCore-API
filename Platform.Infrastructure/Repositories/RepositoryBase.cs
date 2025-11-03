@@ -27,7 +27,7 @@ namespace Platform.Infrastructure.Repositories
             if (entity != null)
             {
                 EntitySet.Remove(entity);
-                await _context.SaveChangesAsync(cancellationToken);
+                await SaveChangesWithRetryAsync(cancellationToken);
             }
             return entity;
         }
@@ -38,7 +38,7 @@ namespace Platform.Infrastructure.Repositories
             if (entity != null)
             {
                 EntitySet.Remove(entity);
-                await _context.SaveChangesAsync(cancellationToken);
+                await SaveChangesWithRetryAsync(cancellationToken);
             }
             return entity;
         }
@@ -46,14 +46,30 @@ namespace Platform.Infrastructure.Repositories
         public async Task Delete(TEntity entity, CancellationToken cancellationToken)
         {
             EntitySet.Remove(entity);
-            await _context.SaveChangesAsync(cancellationToken);
+            await SaveChangesWithRetryAsync(cancellationToken);
         }
 
         public async Task<TEntity?> Find(Expression<Func<TEntity, bool>> expr, CancellationToken cancellationToken)
         {
             try
             {
-                return await EntitySet.AsNoTracking().FirstOrDefaultAsync(expr, cancellationToken);
+                // Cargar todos los datos en memoria y luego aplicar el filtro
+                var results = await _context.Set<TEntity>().ToListAsync(cancellationToken);
+                _logger.LogInformation($"Find: Cargados {results.Count} registros de tipo {typeof(TEntity).Name} en memoria");
+                
+                // Aplicar el filtro en memoria
+                var result = results.AsQueryable().FirstOrDefault(expr.Compile());
+                
+                if (result != null)
+                {
+                    _logger.LogInformation($"Find: Se encontró un registro de tipo {typeof(TEntity).Name}");
+                }
+                else
+                {
+                    _logger.LogWarning($"Find: No se encontró ningún registro de tipo {typeof(TEntity).Name} con el filtro especificado");
+                }
+                
+                return result;
             }
             catch (TaskCanceledException ex)
             {
@@ -89,7 +105,18 @@ namespace Platform.Infrastructure.Repositories
         {
             try
             {
-                return await _context.Set<TEntity>().AsNoTracking().ToListAsync(cancellationToken);
+                // Cargar directamente en memoria para evitar problemas con SQLite
+                var users = await EntitySet.ToListAsync();
+                var result = await _context.Users.ToListAsync(cancellationToken);
+                _logger.LogInformation($"GetAll: Se obtuvieron {result.Count} entidades de tipo {typeof(TEntity).Name}");
+                
+                // Si no hay resultados, registrar una advertencia
+                if (result.Count == 0)
+                {
+                    _logger.LogWarning($"GetAll: No se encontraron entidades de tipo {typeof(TEntity).Name}");
+                }
+                
+                return (IEnumerable<TEntity>)result;
             }
             catch (TaskCanceledException ex)
             {
@@ -98,7 +125,7 @@ namespace Platform.Infrastructure.Repositories
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while getting all entities of type {EntityType}", typeof(TEntity).Name);
+                _logger.LogError(ex, "Error al obtener todas las entidades de tipo {EntityType}: {Message}", typeof(TEntity).Name, ex.Message);
                 throw;
             }
         }
@@ -116,19 +143,56 @@ namespace Platform.Infrastructure.Repositories
         public async Task<TEntity> Create(TEntity entity, CancellationToken cancellationToken)
         {
             var result = await EntitySet.AddAsync(entity, cancellationToken);
-            await _context.SaveChangesAsync(cancellationToken);
+            await SaveChangesWithRetryAsync(cancellationToken);
             return result.Entity;
         }
 
         public async Task Update(TEntity entity, CancellationToken cancellationToken)
         {
             _context.Entry(entity).State = EntityState.Modified;
-            await _context.SaveChangesAsync(cancellationToken);
+            await SaveChangesWithRetryAsync(cancellationToken);
         }
 
         public void GetByIdAsync(Guid userId)
         {
             throw new NotImplementedException();
+        }
+
+        // Método para guardar cambios con reintentos para SQLite
+        private async Task SaveChangesWithRetryAsync(CancellationToken cancellationToken)
+        {
+            int retryCount = 0;
+            const int maxRetries = 3;
+            const int retryDelayMs = 200;
+            
+            while (true)
+            {
+                try
+                {
+                    await _context.SaveChangesAsync(cancellationToken);
+                    return;
+                }
+                catch (DbUpdateException ex) when (IsSQLiteLockException(ex) && retryCount < maxRetries)
+                {
+                    retryCount++;
+                    _logger.LogWarning(ex, "SQLite lock detected while saving changes. Retry attempt {RetryCount} of {MaxRetries}", 
+                        retryCount, maxRetries);
+                    await Task.Delay(retryDelayMs * retryCount, cancellationToken);
+                }
+                catch (Exception)
+                {
+                    throw;
+                }
+            }
+        }
+
+        // Método auxiliar para detectar excepciones de bloqueo de SQLite
+        private bool IsSQLiteLockException(Exception ex)
+        {
+            // Verificar si es una excepción de bloqueo de SQLite
+            return ex.Message.Contains("database is locked") || 
+                   ex.Message.Contains("busy") ||
+                   ex.Message.Contains("cannot start a transaction");
         }
     }
 }

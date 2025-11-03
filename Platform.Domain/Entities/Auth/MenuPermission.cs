@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Platform.Domain.Entities.Auth
 {
-    [Table("MenuPermissions", Schema = "Auth")]
+    [Table("AuthMenuPermissions")]
     public class MenuPermission
     {
         public Guid MenuId { get; set; }
