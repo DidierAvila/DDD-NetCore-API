@@ -72,6 +72,27 @@ namespace Platform.Infrastructure.DbContexts
                 .HasForeignKey(ur => ur.RoleId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // Configurar relación many-to-many entre Users y Roles usando la entidad de unión UserRole
+            modelBuilder.Entity<User>()
+                .HasMany(u => u.Roles)
+                .WithMany(r => r.Users)
+                .UsingEntity<UserRole>(
+                    j => j
+                        .HasOne(ur => ur.Role)
+                        .WithMany()
+                        .HasForeignKey(ur => ur.RoleId)
+                        .OnDelete(DeleteBehavior.Cascade),
+                    j => j
+                        .HasOne(ur => ur.User)
+                        .WithMany()
+                        .HasForeignKey(ur => ur.UserId)
+                        .OnDelete(DeleteBehavior.Cascade),
+                    j =>
+                    {
+                        j.ToTable("UserRoles", "Auth");
+                        j.HasKey(ur => new { ur.UserId, ur.RoleId });
+                    });
+
             // Configurar otras relaciones
             modelBuilder.Entity<User>()
                 .HasOne(u => u.UserType)
